@@ -1,0 +1,8 @@
+.outline-gray-button-container {
+  display: flex;
+  position: relative;
+}
+ 
+.outline-gray-buttonroot-class-name {
+  align-self: flex-end;
+}

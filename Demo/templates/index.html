@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Washing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+            background-color: #f9f9f9;
+        }
+        h1 {
+            color: #333;
+        }
+        #video-container {
+            margin-top: 20px;
+        }
+        #video-feed {
+            width: 640px;
+            height: 480px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+        }
+        #prediction {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hand Washing Recognition with Skeleton</h1>
+
+    <div id="video-container">
+        <img src="/video_feed_with_skeleton" alt="Video Feed with Skeleton" id="video-feed">
+    </div>
+    <div id="prediction">
+        Top Prediction: <span id="top-prediction">Loading...</span>
+    </div>
+
+    <script>
+        async function fetchPrediction() {
+            try {
+                const response = await fetch('/predict', { method: 'POST' });
+                const data = await response.json();
+
+                // Update the prediction display
+                document.getElementById('top-prediction').textContent =
+                    `${data.label} (${(data.confidence * 100).toFixed(2)}%)`;
+            } catch (error) {
+                console.error('Error fetching prediction:', error);
+                document.getElementById('top-prediction').textContent = 'Error fetching prediction';
+            }
+        }
+
+        // Fetch predictions every 500ms
+        setInterval(fetchPrediction, 500);
+    </script>
+</body>
+</html>

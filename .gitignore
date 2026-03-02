@@ -1,0 +1,28 @@
+
+__pycache__/
+
+# Node.js / React / Next.js（最重要！避免 node_modules 進入 git）
+node_modules/
+.soft-ui-pro-react/node_modules/    # 如果有這個子專案資料夾
+.next/
+build/
+dist/
+*.log
+*.zip
+
+# 資料集與大型媒體檔案
+Preprocessing/Augmented_Dataset/
+Preprocessing/Dataset/             
+
+# 環境變數與敏感檔案
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 系統與編輯器雜檔
+.DS_Store
+*.swp
+*~
+Thumbs.db

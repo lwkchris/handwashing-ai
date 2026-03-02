@@ -1,0 +1,59 @@
+.about-page {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background-color: #E0F7FA;
+    color: #004D40;
+    padding-bottom: 2rem;
+  }
+  
+  .about-hero {
+    text-align: center;
+    padding: 3rem 1rem 2rem;
+    background-color: #B2EBF2;
+    border-bottom: 5px solid #00ACC1;
+  }
+  
+  .about-mascot {
+    width: 190px;
+    height: auto;
+    margin-bottom: 1rem;
+  }
+  
+  .about-title {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .about-intro {
+    font-size: 1.2rem;
+    color: #00796B;
+  }
+  
+  .about-section {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background-color: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .about-section h2 {
+    font-size: 1.6rem;
+    color: #00695C;
+    margin-bottom: 0.5rem;
+  }
+  
+  .about-section p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+  
+  .about-footer {
+    text-align: center;
+    padding: 1rem;
+    margin-top: 2rem;
+    background-color: #B2EBF2;
+    font-size: 0.9rem;
+    color: #004D40;
+  }
+  

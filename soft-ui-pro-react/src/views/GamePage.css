@@ -1,0 +1,143 @@
+.game-page {
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+    background: linear-gradient(to bottom right, #E1F5FE, #B2EBF2);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  
+  .game-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-grow: 1;
+    padding: 3rem 1rem;
+    text-align: center;
+  }
+  
+  .game-title {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: #00796B;
+    animation: fadeIn 1s ease-out;
+  }
+  
+  /* 🎯 Animated Start Button */
+  .start-button {
+    font-size: 1.5rem;
+    background-color: #FFEB3B;
+    color: #333;
+    border: none;
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    cursor: pointer;
+    animation: bounce 2s infinite;
+    transition: transform 0.2s, background-color 0.3s;
+  }
+  
+  .start-button:hover {
+    background-color: #FDD835;
+    transform: scale(1.1);
+  }
+  
+  /* ✨ Fade In Animation */
+  @keyframes fadeIn {
+    0% {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* 🐣 Bouncy Effect */
+  @keyframes bounce {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-12px);
+    }
+  }
+
+  .game-page {
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+  }
+  
+  .guide-layout {
+    display: flex;
+    justify-content: space-between;
+    gap: 30px;
+    align-items: flex-start;
+    margin-top: 20px;
+  }
+  
+  .left-panel, .right-panel {
+    flex: 1;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-width: 1080px;
+  }
+  
+  .webcam-stream, .step-image {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+  }
+  
+  .prediction-result {
+    margin-top: 15px;
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+  
+  .start-section {
+    text-align: center;
+    margin-top: 40px;
+  }
+  
+  .start-button {
+    padding: 10px 25px;
+    font-size: 1.2rem;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  .start-button:hover {
+    background-color: #45a049;
+  }
+  
+.webcam-wrap {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.webcam-stream {
+  width: 100%;
+  display: block;
+}
+
+.webcam-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+  
