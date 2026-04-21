@@ -1,71 +1,96 @@
 import React from 'react'
-import Header from '../components/Header' // Capital H
-// Make sure path is correct
-import './HandwashingGamePage.css'
+import { useHistory } from 'react-router-dom'
+import Header from '../components/Header'
+import './home.css'
 
-function HandwashingGamePage() {
+function Home() {
+  const history = useHistory()
+
+  const mainSections = [
+    {
+      key: 'tutorial',
+      title: '📖 教學',
+      subtitle: '學習洗手七步驟 🧼',
+      icon: '/tutorial-icon.png',
+      className: 'section-tutorial',
+      onClick: () => history.push('/handwashing/tutorial'),
+    },
+    {
+      key: 'practice',
+      title: '🧪 練習',
+      subtitle: '試吓自己做唔做到 💪',
+      icon: '/practice-icon.png',
+      className: 'section-practice',
+      onClick: () => history.push('/game'),
+    },
+    {
+      key: 'game',
+      title: '🎮 遊戲',
+      subtitle: '玩遊戲挑戰自己 🏆',
+      icon: '/game-icon.png',
+      className: 'section-game',
+      onClick: () => history.push('/challenge'),
+    },
+  ]
+
   return (
-    <div className="handwashing-game-page">
-      {/* 🔝 導覽列 */}
+    <div className="home-page">
       <Header />
 
-      {/* 👋 歡迎區域 */}
-      <section className="welcome-section">
-        <div className="mascot">
+      <section className="home-welcome-section">
+        <div className="home-mascot-wrap">
           <img
             src="/Photoroom_20250505_114039.png"
             alt="洗手小勇士吉祥物"
-            className="mascot-image"
+            className="home-mascot-image"
           />
         </div>
-        <div className="welcome-text">
-          <h1 className="welcome-title">👋 歡迎嚟到洗手小勇士！</h1>
-          <p className="welcome-message">
-            一齊玩住學，做個乾淨小勇士啦！
+
+        <div className="home-welcome-text">
+          <h1 className="home-welcome-title">🧼 洗手小勇士 🦸‍♂️</h1>
+          <p className="home-welcome-message">
+            一齊學識正確洗手方法 ✨
+            <br />
+            保護自己同屋企人 🏠💖
           </p>
         </div>
       </section>
 
-      {/* 🧼 任務選單 */}
-      <section className="menu-section">
-        <h2 className="section-title">揀一個關卡開始啦！</h2>
-        <div className="phase-cards">
-          <div className="phase-card phase-pretest">
-            <div className="phase-icon">
-              <img src="/pretest-icon.png" alt="前測圖示" />
-            </div>
-            <h3 className="phase-title">前測</h3>
-          </div>
-          <div className="phase-card phase-practice">
-            <div className="phase-icon">
-              <img src="/practice-icon.png" alt="練習圖示" />
-            </div>
-            <h3 className="phase-title">練習</h3>
-          </div>
-          <div className="phase-card phase-battle">
-            <div className="phase-icon">
-              <img src="/battle-icon.png" alt="挑戰圖示" />
-            </div>
-            <h3 className="phase-title">挑戰</h3>
-          </div>
-          <div className="phase-card phase-posttest">
-            <div className="phase-icon">
-              <img src="/posttest-icon.png" alt="大測驗圖示" />
-            </div>
-            <h3 className="phase-title">大測驗</h3>
-          </div>
+      <section className="home-menu-section">
+        <h2 className="home-section-title">👇 揀一個開始啦！ 👇</h2>
+
+        <div className="home-main-section-cards">
+          {mainSections.map((item) => (
+            <button
+              key={item.key}
+              className={`home-main-section-card ${item.className}`}
+              onClick={item.onClick}
+              type="button"
+            >
+              <div className="home-main-section-icon">
+                <img src={item.icon} alt={`${item.title}圖示`} />
+              </div>
+
+              <div className="home-main-section-content">
+                <h3 className="home-main-section-title">{item.title}</h3>
+                <p className="home-main-section-subtitle">{item.subtitle}</p>
+              </div>
+            </button>
+          ))}
         </div>
       </section>
 
-      {/* 💡 鼓勵資訊區 */}
-      <section className="info-section">
-        <h2 className="info-title">你知唔知道？</h2>
-        <p className="info-text">
-          勤洗手可以打敗好多細菌！做個健康小勇士，保護自己同屋企人啦 💪
+      <section className="home-info-section">
+        <h2 className="home-info-title">💡 小貼士</h2>
+        <p className="home-info-text">
+          🦠 細菌睇唔到，但係會黐喺你手上！
+          <br />
+          🧼 記得用正確方法洗手，先可以真正乾淨！✨
         </p>
       </section>
     </div>
   )
 }
 
-export default HandwashingGamePage
+export default Home
+

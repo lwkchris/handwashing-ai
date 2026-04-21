@@ -11,22 +11,30 @@ import './style.css'
 import ComingSoon from './views/coming-soon'
 import Home from './views/home'
 import NotFound from './views/not-found'
-import AboutUs from './views/Aboutus.js'
-import GamePage from './views/GamePage';
+import AboutUs from './views/Aboutus'
+import GamePage from './views/GamePage'
+import HandwashingChallengePage from './views/HandwashingChallengePage'
+import HandwashingTutorialPage from './views/HandwashingTutorialPage'
 
 const App = () => {
   return (
     <Router>
       <Switch>
-        <Route component={ComingSoon} exact path="/coming-soon" />
-        <Route component={Home} exact path="/" />
-        <Route component={AboutUs} exact path="/Aboutus" /> 
-        <Route component={GamePage} exact path="/game" />
-        <Route component={NotFound} path="**" />
-        <Redirect to="**" />
+        <Route exact path="/coming-soon" component={ComingSoon} />
+        <Route exact path="/" component={Home} />
+        <Route exact path="/Aboutus" component={AboutUs} />
+        <Route exact path="/game" component={GamePage} />
+
+        <Route exact path="/challenge" component={HandwashingChallengePage} />
+        <Route exact path="/handwashing/tutorial" component={HandwashingTutorialPage} />
+
+        <Route exact path="/404" component={NotFound} />
+        <Redirect to="/404" />
       </Switch>
     </Router>
   )
 }
 
 ReactDOM.render(<App />, document.getElementById('app'))
+
+

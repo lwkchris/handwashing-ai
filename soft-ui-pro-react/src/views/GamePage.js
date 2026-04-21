@@ -8,60 +8,72 @@ import { Camera } from '@mediapipe/camera_utils';
 import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 
 function GamePage() {
+  // ✅ 更新：加入完整 7 個洗手步驟 (內、外、夾、弓、大、立、腕)
+  // 請確保你有對應嘅圖片放喺 public/images/ 目錄下
   const steps = [
-    { label: '洗手心', image: '/images/step1.png' },
-    { label: '洗手背', image: '/images/step2.png' },
-    { label: '洗指縫', image: '/images/step3.png' },
-    { label: '洗手腕', image: '/images/step4.png' },
-  ];
+  { label: 'Step1', displayLabel: '洗手心', image: '/images/Step1.png' },
+  { label: 'Step2', displayLabel: '洗手背', image: '/images/Step2.png' },
+  { label: 'Step3', displayLabel: '洗指縫', image: '/images/Step3.png' },
+  { label: 'Step4', displayLabel: '洗指背', image: '/images/Step4.png' },
+  { label: 'Step5', displayLabel: '洗大拇指', image: '/images/Step5.png' },
+  { label: 'Step6', displayLabel: '洗指尖', image: '/images/Step6.png' },
+  { label: 'Step7', displayLabel: '洗手腕', image: '/images/Step7.png' },
+];
 
+  // 遊戲狀態管理
   const [gameStarted, setGameStarted] = useState(false);
+  const [gameFinished, setGameFinished] = useState(false);
+  
   const [prediction, setPrediction] = useState({ label: '尚未開始', confidence: 0 });
   const [score, setScore] = useState(0);
   const [stepIndex, setStepIndex] = useState(0);
   const [cameraError, setCameraError] = useState('');
-
-  // ✅ NEW: camera facing mode (front/back)
-  // "user" = front camera, "environment" = back camera
-  const [facingMode, setFacingMode] = useState('user');
+  const [facingMode, setFacingMode] = useState('environment'); // "user" = 前置, "environment" = 後置
+  
+  // ✅ 新增：用作畫面顯示實時倒數嘅 State
+  const [holdSeconds, setHoldSeconds] = useState(0);
 
   const holdCounter = useRef(0);
   const currentStep = steps[stepIndex];
 
-  // Webcam refs
+  // Webcam & MediaPipe refs
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const cameraRef = useRef(null);
-
-  // Mediapipe refs
   const handsRef = useRef(null);
   const latestLandmarks126Ref = useRef(null);
 
+  // ---------- 處理遊戲流程 ----------
   const handleStartGame = () => {
     setGameStarted(true);
+    setGameFinished(false);
     setScore(0);
     setStepIndex(0);
+    setHoldSeconds(0);
     holdCounter.current = 0;
     setPrediction({ label: '偵測中...', confidence: 0 });
+  };
+
+  const handleRestartGame = () => {
+    handleStartGame();
   };
 
   const handleToggleCamera = () => {
     setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
   };
 
-  // ---------- Helpers ----------
+  // ---------- 數據處理 Helpers ----------
   const flattenHandLandmarksTo63 = (handLandmarks) => {
-    // handLandmarks: 21 points, each has x,y,z
     const out = [];
     for (const p of handLandmarks) out.push(p.x, p.y, p.z);
-    return out; // 63
+    return out;
   };
 
   const resultsTo126 = (results) => {
     const hands = results?.multiHandLandmarks || [];
     const left = hands[0] ? flattenHandLandmarksTo63(hands[0]) : new Array(63).fill(0);
     const right = hands[1] ? flattenHandLandmarksTo63(hands[1]) : new Array(63).fill(0);
-    return left.concat(right); // 126
+    return left.concat(right);
   };
 
   const postLandmarks = async (landmarks126) => {
@@ -70,26 +82,23 @@ function GamePage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ landmarks: landmarks126 }),
     });
-
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-    return data; // expected {label, confidence}
+    return data;
   };
 
   // ---------- Setup MediaPipe + Browser Webcam ----------
   useEffect(() => {
-    if (!gameStarted) return;
+    if (!gameStarted || gameFinished) return undefined;
 
     let cancelled = false;
 
     const setup = async () => {
       try {
         setCameraError('');
-
         const videoEl = videoRef.current;
         if (!videoEl) return;
 
-        // Init MediaPipe Hands
         const hands = new Hands({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
@@ -104,10 +113,8 @@ function GamePage() {
         hands.onResults((results) => {
           if (cancelled) return;
 
-          // 1) 保存 landmarks 俾 backend classify
           latestLandmarks126Ref.current = resultsTo126(results);
 
-          // 2) 畫 skeleton 到 canvas（疊喺 video 上面）
           const canvasEl = canvasRef.current;
           if (!canvasEl) return;
 
@@ -117,20 +124,16 @@ function GamePage() {
           const w = videoEl.videoWidth || 640;
           const h = videoEl.videoHeight || 480;
 
-          // 確保 canvas 實際像素同 video 一致（清晰）
           if (canvasEl.width !== w) canvasEl.width = w;
           if (canvasEl.height !== h) canvasEl.height = h;
 
           ctx.save();
           ctx.clearRect(0, 0, w, h);
 
-          // ✅ 如果你想 canvas 只畫骨架（唔畫 video），就保持註解
-          // ctx.drawImage(videoEl, 0, 0, w, h);
-
           const handsLm = results.multiHandLandmarks || [];
           for (const lm of handsLm) {
-            drawConnectors(ctx, lm, Hands.HAND_CONNECTIONS, { lineWidth: 4 });
-            drawLandmarks(ctx, lm, { radius: 3 });
+            drawConnectors(ctx, lm, Hands.HAND_CONNECTIONS, { lineWidth: 4, color: '#00FF00' });
+            drawLandmarks(ctx, lm, { radius: 3, color: '#FF0000' });
           }
 
           ctx.restore();
@@ -138,13 +141,11 @@ function GamePage() {
 
         handsRef.current = hands;
 
-        // Stop any old camera first (important when switching facingMode)
         try {
           if (cameraRef.current && cameraRef.current.stop) cameraRef.current.stop();
         } catch {}
         cameraRef.current = null;
 
-        // Init Camera util (drives frames into mediapipe)
         const cam = new Camera(videoEl, {
           onFrame: async () => {
             if (!handsRef.current || !videoRef.current) return;
@@ -152,8 +153,6 @@ function GamePage() {
           },
           width: 640,
           height: 480,
-
-          // ✅ NEW: front/back camera
           facingMode: facingMode,
         });
 
@@ -169,36 +168,18 @@ function GamePage() {
 
     return () => {
       cancelled = true;
-
-      // Stop camera
-      try {
-        if (cameraRef.current && cameraRef.current.stop) cameraRef.current.stop();
-      } catch {}
+      try { if (cameraRef.current && cameraRef.current.stop) cameraRef.current.stop(); } catch {}
       cameraRef.current = null;
-
-      // Close mediapipe
-      try {
-        if (handsRef.current && handsRef.current.close) handsRef.current.close();
-      } catch {}
+      try { if (handsRef.current && handsRef.current.close) handsRef.current.close(); } catch {}
       handsRef.current = null;
-
       latestLandmarks126Ref.current = null;
-
-      // Clear canvas
-      try {
-        const c = canvasRef.current;
-        if (c) {
-          const ctx = c.getContext('2d');
-          if (ctx) ctx.clearRect(0, 0, c.width, c.height);
-        }
-      } catch {}
     };
-  }, [gameStarted, facingMode]); // ✅ include facingMode so toggling camera re-inits
+  }, [gameStarted, gameFinished, facingMode]);
 
-  // ---------- Game loop: every 1 sec call backend with latest landmarks ----------
+  // ---------- Game loop: 判斷動作與倒數邏輯 ----------
   useEffect(() => {
     let interval;
-    if (gameStarted) {
+    if (gameStarted && !gameFinished && currentStep) {
       interval = setInterval(async () => {
         try {
           const landmarks126 = latestLandmarks126Ref.current || new Array(126).fill(0);
@@ -209,21 +190,29 @@ function GamePage() {
             confidence: typeof data.confidence === 'number' ? data.confidence : 0,
           });
 
+          // 如果 AI 判斷正確
           if (data.label === currentStep.label) {
             holdCounter.current += 1;
+            setHoldSeconds(holdCounter.current); // 更新畫面倒數
 
-            // Add score only once per step
             if (holdCounter.current === 1) setScore((prev) => prev + 1);
 
-            // Move to next step after 3 correct frames
+            // 成功維持 3 秒，跳去下一個步驟
             if (holdCounter.current >= 3) {
               if (stepIndex < steps.length - 1) {
                 setStepIndex((prev) => prev + 1);
                 holdCounter.current = 0;
+                setHoldSeconds(0);
+              } else {
+                // 如果已經係最後一步，完成遊戲
+                setGameFinished(true);
+                setGameStarted(false);
               }
             }
           } else {
+            // 如果動作錯咗/斷咗，重置倒數
             holdCounter.current = 0;
+            setHoldSeconds(0);
           }
         } catch (err) {
           console.error('❌ Prediction error:', err);
@@ -233,71 +222,103 @@ function GamePage() {
     }
 
     return () => clearInterval(interval);
-  }, [gameStarted, stepIndex, currentStep.label]);
+  }, [gameStarted, gameFinished, stepIndex, currentStep, steps.length]);
 
   return (
     <div className="game-page">
       <Header />
 
-      <div className="guide-layout">
-        {/* Webcam on left (browser webcam) */}
-        <div className="left-panel">
-          <h2>🧼 Webcam 偵測中...</h2>
-
-          {/* ✅ NEW: toggle camera button */}
-          <button
-            onClick={handleToggleCamera}
-            style={{
-              marginBottom: '10px',
-              padding: '8px 14px',
-              borderRadius: '10px',
-              border: 'none',
-              background: '#4CAF50',
-              color: 'white',
-              cursor: 'pointer',
-            }}
-          >
-            🔄 切換鏡頭（{facingMode === 'user' ? '前置' : '後置'}）
-          </button>
-
-          {cameraError ? (
-            <div style={{ padding: 12, borderRadius: 12, background: '#fff3cd' }}>
-              <p style={{ margin: 0 }}>{cameraError}</p>
-            </div>
-          ) : (
-            <div className="webcam-wrap">
-              <video ref={videoRef} className="webcam-stream" autoPlay playsInline muted />
-              <canvas ref={canvasRef} className="webcam-overlay" />
-            </div>
-          )}
-        </div>
-
-        {/* Step instructions on right */}
-        <div className="right-panel">
-          <h2>
-            第 {stepIndex + 1} 步：{currentStep.label}
-          </h2>
-          <img src={currentStep.image} alt={currentStep.label} className="step-image" />
-
-          <div className="prediction-result">
-            <p>🧠 AI 偵測：{prediction.label}</p>
-            <p>📊 信心指數：{(prediction.confidence * 100).toFixed(2)}%</p>
-            <p>🎯 分數：{score}</p>
-            <p>⏱ 正確維持秒數：{holdCounter.current}/3</p>
+      <main className="main-content">
+        
+        {/* 狀態一：尚未開始遊戲 */}
+        {!gameStarted && !gameFinished && (
+          <div className="start-section text-center">
+            <h1>🧼 洗手教學導引</h1>
+            <p>準備好就開始挑戰 7 個正確洗手步驟啦！</p>
+            <button className="start-button" onClick={handleStartGame}>
+              開始遊戲
+            </button>
           </div>
-        </div>
-      </div>
+        )}
 
-      {!gameStarted && (
-        <div className="start-section">
-          <h1>🧼 洗手教學導引</h1>
-          <button className="start-button" onClick={handleStartGame}>
-            開始遊戲
-          </button>
-        </div>
-      )}
+        {/* 狀態二：遊戲進行中 */}
+        {gameStarted && !gameFinished && currentStep && (
+          <div className="guide-layout">
+            {/* 左邊：Webcam */}
+            <div className="left-panel">
+              <h2>🧼 Webcam 偵測中...</h2>
+              <button
+                onClick={handleToggleCamera}
+                style={{
+                  marginBottom: '10px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#4CAF50',
+                  color: 'white',
+                  cursor: 'pointer',
+                }}
+              >
+                🔄 切換鏡頭（{facingMode === 'user' ? '前置' : '後置'}）
+              </button>
+
+              {cameraError ? (
+                <div style={{ padding: 12, borderRadius: 12, background: '#fff3cd' }}>
+                  <p style={{ margin: 0 }}>{cameraError}</p>
+                </div>
+              ) : (
+                <div className="webcam-wrap">
+                  <video ref={videoRef} className="webcam-stream" autoPlay playsInline muted />
+                  <canvas ref={canvasRef} className="webcam-overlay" />
+                </div>
+              )}
+            </div>
+
+            {/* 右邊：遊戲指示與倒數 */}
+            <div className="right-panel">
+              <div className="step-badge">進度：{stepIndex + 1} / {steps.length}</div>
+              <h2>
+                第 {stepIndex + 1} 步：請做出「{currentStep.displayLabel}」
+              </h2>
+              
+              {/* 如果無圖片，可以 fallback 去文字或者留空 */}
+              <img src={currentStep.image} alt={currentStep.label} className="step-image" onError={(e) => e.target.style.display='none'} />
+
+              <div className="prediction-result">
+                <p>🧠 AI 偵測：<strong>{prediction.label}</strong></p>
+                <p>📊 信心指數：{(prediction.confidence * 100).toFixed(2)}%</p>
+                <p>🎯 累積總分：{score}</p>
+                
+                {/* 倒數 3 秒 UI */}
+                <div className="countdown-container" style={{ marginTop: '15px', padding: '10px', background: holdSeconds > 0 ? '#e8f5e9' : '#f5f5f5', borderRadius: '8px', transition: 'background 0.3s' }}>
+                  {holdSeconds > 0 ? (
+                    <h3 style={{ color: '#2e7d32', margin: 0 }}>✅ 動作正確！請維持 {3 - holdSeconds} 秒...</h3>
+                  ) : (
+                    <h3 style={{ color: '#757575', margin: 0 }}>⏳ 等待正確動作...</h3>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 狀態三：遊戲完成 */}
+        {gameFinished && (
+          <div className="finish-section text-center">
+            <h1>🎉 挑戰成功！</h1>
+            <p>你已經完成晒全部 7 個洗手步驟！</p>
+            <h2 style={{ color: '#f39c12' }}>🏆 最終分數：{score}</h2>
+            <button className="start-button" onClick={handleRestartGame} style={{ marginTop: '20px' }}>
+              再玩一次
+            </button>
+          </div>
+        )}
+
+      </main>
     </div>
   );
 }
 
 export default GamePage;
+
+

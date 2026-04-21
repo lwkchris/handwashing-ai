@@ -1,0 +1,159 @@
+.tutorial-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #eefbff 0%, #fff8ef 100%);
+  padding-bottom: 40px;
+}
+
+.tutorial-page-container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 20px 40px;
+}
+
+.tutorial-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.back-button {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #ffffff;
+  color: #1d4f68;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+}
+
+.tutorial-progress-text {
+  color: #466170;
+  font-weight: 700;
+}
+
+.tutorial-card {
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.08);
+}
+
+.tutorial-image-area {
+  width: 100%;
+  min-height: 320px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, #dff6ff 0%, #fff1f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.tutorial-step-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  display: block;
+}
+
+.tutorial-text-area {
+  padding: 10px 4px 10px;
+  text-align: center;
+}
+
+.tutorial-step-title {
+  margin: 0 0 14px;
+  font-size: 2rem;
+  color: #174b63;
+  font-weight: 800;
+}
+
+.tutorial-step-description {
+  margin: 0 auto;
+  max-width: 700px;
+  font-size: 1.08rem;
+  line-height: 1.8;
+  color: #546a77;
+}
+
+.tutorial-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 26px;
+  flex-wrap: wrap;
+}
+
+.nav-button {
+  min-width: 120px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: #eaf4f8;
+  color: #1d4f68;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-button.primary {
+  background: #7fdff3;
+  color: #0f4258;
+}
+
+.nav-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.nav-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tutorial-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: #cfdde4;
+  cursor: pointer;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.dot.active {
+  background: #63cfe7;
+  transform: scale(1.2);
+}
+
+@media (max-width: 768px) {
+  .tutorial-card {
+    padding: 20px;
+  }
+
+  .tutorial-image-area {
+    min-height: 240px;
+  }
+
+  .tutorial-step-title {
+    font-size: 1.6rem;
+  }
+
+  .tutorial-step-description {
+    font-size: 1rem;
+  }
+}
+
