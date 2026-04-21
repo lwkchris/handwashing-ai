@@ -10,37 +10,37 @@ function HandwashingTutorialPage() {
   const steps = [
     {
       title: '💧 第一步：濕水',
-      image: './handwash-step-1.png',
+      image: '/images/handwash-step-1.png',
       description: '先用清水將雙手濕透，為之後使用洗手液做好準備。🚿',
     },
     {
       title: '🫧 第二步：搓手心',
-      image: './handwash-step-2.png',
+      image: '/images/handwash-step-2.png',
       description: '加入洗手液，雙手手心互相搓揉，洗走表面污垢。🧼',
     },
     {
       title: '🙌 第三步：搓手背',
-      image: './handwash-step-3.png',
+      image: '/images/handwash-step-3.png',
       description: '一隻手搓另一隻手背，之後交換，確保手背位置都洗乾淨。✨',
     },
     {
       title: '🤝 第四步：洗指縫',
-      image: './handwash-step-4.png',
+      image: '/images/handwash-step-4.png',
       description: '十指交扣，來回搓揉，清潔手指之間容易忽略嘅位置。🫶',
     },
     {
       title: '✋ 第五步：洗指背',
-      image: './handwash-step-5.png',
+      image: '/images/handwash-step-5.png',
       description: '將手指彎曲，用另一隻手包住搓揉，清潔指背關節位。💫',
     },
     {
       title: '👍 第六步：洗拇指',
-      image: './handwash-step-6.png',
+      image: '/images/handwash-step-6.png',
       description: '握住拇指打圈搓洗，再交換另一隻手，拇指位置都好重要。🔄',
     },
     {
       title: '🌟 第七步：洗指尖與沖水',
-      image: './handwash-step-7.png',
+      image: '/images/handwash-step-7.png',
       description: '指尖喺手心打圈清潔，之後用清水沖淨，再抹乾雙手。🧽',
     },
   ]
