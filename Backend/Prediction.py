@@ -51,11 +51,8 @@ class HandWashing:
 
     def predict_landmarks(self, landmarks):
         """Predict the top 3 confidence levels for the given landmarks."""
-        if not landmarks:
-            return [{"label": "No hands detected", "confidence": 0.0}]
-
-        # Check if landmarks are all zeros
-        if all(value == 0 for value in landmarks):
+        # Check if landmarks are invalid or all zeros
+        if not landmarks or all(value == 0 for value in landmarks):
             return [{"label": "No hands detected", "confidence": 0.0}]
 
         # Convert landmarks to tensor for model input
