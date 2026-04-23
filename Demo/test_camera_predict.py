@@ -22,12 +22,17 @@ while True:
     landmarks = hand_washing.get_landmarks_from_frame(frame)
     predictions = hand_washing.predict_landmarks(landmarks)
 
-    if predictions:
-        label = predictions[0]["label"]
-        confidence = predictions[0]["confidence"]
-        text = f'{label} ({confidence * 100:.2f}%)'
+    if not landmarks:
+        text = "No hand detected (0.00%)"
     else:
-        text = "No hands detected"
+        predictions = hand_washing.predict_landmarks(landmarks)
+
+        if predictions:
+            label = predictions[0]["label"]
+            confidence = predictions[0]["confidence"]
+            text = f'{label} ({confidence * 100:.2f}%)'
+        else:
+            text = "No hands detected (0.00%)"
 
     cv2.putText(frame, text, (30, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
     cv2.imshow("Hand Washing Prediction", frame)
