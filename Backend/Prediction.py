@@ -54,6 +54,10 @@ class HandWashing:
         if not landmarks:
             return [{"label": "No hands detected", "confidence": 0.0}]
 
+        # Check if landmarks are all zeros
+        if all(value == 0 for value in landmarks):
+            return [{"label": "No hands detected", "confidence": 0.0}]
+
         # Convert landmarks to tensor for model input
         landmarks_tensor = torch.tensor(landmarks, dtype=torch.float32).unsqueeze(0).to(self.device)
 
