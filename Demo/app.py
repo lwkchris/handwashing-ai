@@ -105,8 +105,8 @@ def predict():
         landmarks = hand_washing.get_landmarks_from_frame(frame)
         print(f"📌 Extracted landmarks: {landmarks}")
 
-        if landmarks is None:
-            print("🚫 No landmarks detected in current frame. Skipping prediction.")
+        if not landmarks or all(value == 0 for value in landmarks):
+            print("🚫 No valid hand landmarks detected in current frame. Returning no-hand result.")
             return jsonify({"label": "No hands detected", "confidence": 0.0})
 
         predictions = hand_washing.predict_landmarks(landmarks)

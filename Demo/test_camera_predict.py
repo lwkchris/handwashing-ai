@@ -20,13 +20,11 @@ while True:
     frame = cv2.flip(frame, 1)
 
     landmarks = hand_washing.get_landmarks_from_frame(frame)
-    predictions = hand_washing.predict_landmarks(landmarks)
 
-    if not landmarks:
+    if not landmarks or all(value == 0 for value in landmarks):
         text = "No hand detected (0.00%)"
     else:
         predictions = hand_washing.predict_landmarks(landmarks)
-
         if predictions:
             label = predictions[0]["label"]
             confidence = predictions[0]["confidence"]
