@@ -27,7 +27,7 @@ class HandWashing:
 
     def get_landmarks_from_frame(self, frame):
         """Extract hand landmarks from the video frame using MediaPipe."""
-        with self.mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.4) as hands:
+        with self.mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.25, min_tracking_confidence=0.3) as hands:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(frame_rgb)
 
