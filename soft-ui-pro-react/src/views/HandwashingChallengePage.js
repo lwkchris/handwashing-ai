@@ -1,5 +1,3 @@
-// soft-ui-pro-react/src/views/HandwashingChallengePage.js
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import Header from '../components/Header';
@@ -12,7 +10,6 @@ import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 function HandwashingChallengePage() {
   const history = useHistory();
 
-  // 1. 定義基礎 7 個步驟
   const baseSteps = useMemo(
     () => [
       { label: 'Step1', displayLabel: '洗手心', image: '/images/Step1.png' },
@@ -26,7 +23,6 @@ function HandwashingChallengePage() {
     []
   );
 
-  // 遊戲狀態
   const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
   const [currentStep, setCurrentStep] = useState(null);
@@ -42,7 +38,7 @@ function HandwashingChallengePage() {
   const handsRef = useRef(null);
   const latestLandmarks126Ref = useRef(null);
 
-  // ---------- 數據處理 Helpers ----------
+  // ---------- Helpers ----------
   const flattenHandLandmarksTo63 = (handLandmarks) => {
     const out = [];
     for (const p of handLandmarks) out.push(p.x, p.y, p.z);
@@ -51,9 +47,7 @@ function HandwashingChallengePage() {
 
   const resultsTo126 = (results) => {
     const hands = results?.multiHandLandmarks || [];
-    // 🛑 核心邏輯：如果沒手，回傳 null
     if (hands.length === 0) return null;
-
     const left = hands[0] ? flattenHandLandmarksTo63(hands[0]) : new Array(63).fill(0);
     const right = hands[1] ? flattenHandLandmarksTo63(hands[1]) : new Array(63).fill(0);
     return left.concat(right);
@@ -68,7 +62,6 @@ function HandwashingChallengePage() {
     return await res.json();
   };
 
-  // ---------- 遊戲控制 ----------
   const handleStartGame = () => {
     setGameStarted(true);
     setGameFinished(false);
@@ -80,13 +73,17 @@ function HandwashingChallengePage() {
 
   const handleRestartGame = () => handleStartGame();
 
-  // ---------- MediaPipe Setup ----------
-  // ---------- Setup MediaPipe ----------
+  // ---------- Setup MediaPipe (Mirrors Game.js logic) ----------
   useEffect(() => {
-    if (!gameStarted || gameFinished) return;
+    if (!gameStarted || gameFinished) return undefined;
+
+    let cancelled = false;
 
     const setup = async () => {
       try {
+        const videoEl = videoRef.current;
+        if (!videoEl) return;
+
         const hands = new Hands({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
         });
@@ -94,27 +91,28 @@ function HandwashingChallengePage() {
         hands.setOptions({
           maxNumHands: 2,
           modelComplexity: 1,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6,
         });
 
         hands.onResults((results) => {
-          // Update the landmark reference for the game loop
+          if (cancelled) return;
           latestLandmarks126Ref.current = resultsTo126(results);
 
           const canvasEl = canvasRef.current;
-          const videoEl = videoRef.current;
-          if (!canvasEl || !videoEl) return;
+          if (!canvasEl) return;
 
           const ctx = canvasEl.getContext('2d');
 
-          // 🛑 REMOVED: manual width/height assignment that causes view extension
-          // We let CSS handle the dimensions defined in .webcam-feed and .webcam-overlay
+          // ✅ Matches Game.js: Force canvas resolution to match video metadata
+          // This keeps skeletons aligned without extending the container
+          const w = videoEl.videoWidth || 640;
+          const h = videoEl.videoHeight || 480;
+          if (canvasEl.width !== w) canvasEl.width = w;
+          if (canvasEl.height !== h) canvasEl.height = h;
 
           ctx.save();
-          // Use the internal drawing dimensions of the canvas
-          ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
-
+          ctx.clearRect(0, 0, w, h);
           if (results.multiHandLandmarks) {
             for (const lm of results.multiHandLandmarks) {
               drawConnectors(ctx, lm, Hands.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
@@ -124,9 +122,11 @@ function HandwashingChallengePage() {
           ctx.restore();
         });
 
-        const cam = new Camera(videoRef.current, {
+        handsRef.current = hands;
+
+        const cam = new Camera(videoEl, {
           onFrame: async () => {
-            if (handsRef.current) {
+            if (handsRef.current && videoRef.current) {
               await handsRef.current.send({ image: videoRef.current });
             }
           },
@@ -134,29 +134,30 @@ function HandwashingChallengePage() {
           height: 480,
         });
 
-        cam.start();
         cameraRef.current = cam;
-        handsRef.current = hands;
+        await cam.start();
       } catch (err) {
         setCameraError('鏡頭啟動失敗');
       }
     };
+
     setup();
 
     return () => {
+      cancelled = true;
       cameraRef.current?.stop();
       handsRef.current?.close();
+      latestLandmarks126Ref.current = null;
     };
   }, [gameStarted, gameFinished]);
 
-  // ---------- Challenge Game Loop ----------
+  // ---------- Challenge Loop ----------
   useEffect(() => {
     let interval;
     if (gameStarted && !gameFinished && currentStep) {
       interval = setInterval(async () => {
         const landmarks = latestLandmarks126Ref.current;
 
-        // 🛑 若 MediaPipe 沒偵測到手，直接重置不呼叫後端 API
         if (!landmarks) {
           setPrediction({ label: '未偵測到雙手', confidence: 0 });
           holdCounter.current = 0;
@@ -185,7 +186,6 @@ function HandwashingChallengePage() {
                 setGameFinished(true);
                 setGameStarted(false);
               } else {
-                // 隨機抽取下一個步驟
                 setCurrentStep(baseSteps[Math.floor(Math.random() * baseSteps.length)]);
               }
             }
