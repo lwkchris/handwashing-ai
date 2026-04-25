@@ -18,14 +18,14 @@ function AboutUs() {
       </section>
 
       <section className="about-section">
-        <h2>我哋嘅故事 ✨</h2>
+        <h2>我們的故事 ✨</h2>
         <p>
           這裏是為了幫助小朋友了解洗手的重要性。透過互動遊戲，我們希望令洗手變得有趣和容易學習！
         </p>
       </section>
 
       <section className="about-section">
-        <h2>我哋嘅目標 🎯</h2>
+        <h2>我們的目標 🎯</h2>
         <p>
           教導正確洗手步驟，提升衛生意識，打造一個健康快樂的校園和社區！
         </p>

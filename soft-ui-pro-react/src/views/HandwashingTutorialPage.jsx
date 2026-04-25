@@ -26,7 +26,7 @@ function HandwashingTutorialPage() {
     {
       title: '🤝 第四步：洗指縫',
       image: '/images/Step4.png',
-      description: '十指交扣，來回搓揉，清潔手指之間容易忽略嘅位置。🫶',
+      description: '十指交扣，來回搓揉，清潔手指之間容易忽略的位置。🫶',
     },
     {
       title: '✋ 第五步：洗指背',
