@@ -1,3 +1,5 @@
+// soft-ui-pro-react/src/views/HandwashingChallengePage.js
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import Header from '../components/Header';
