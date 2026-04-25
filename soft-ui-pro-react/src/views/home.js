@@ -18,7 +18,7 @@ function Home() {
     {
       key: 'practice',
       title: '🧪 練習',
-      subtitle: '試吓自己做唔做到 💪',
+      subtitle: '試下自己做不做得到 💪',
       icon: '/practice-icon.png',
       className: 'section-practice',
       onClick: () => history.push('/game'),
@@ -26,7 +26,7 @@ function Home() {
     {
       key: 'game',
       title: '🎮 遊戲',
-      subtitle: '玩遊戲挑戰自己 🏆',
+      subtitle: '遊戲中挑戰自己 🏆',
       icon: '/game-icon.png',
       className: 'section-game',
       onClick: () => history.push('/challenge'),
@@ -49,15 +49,15 @@ function Home() {
         <div className="home-welcome-text">
           <h1 className="home-welcome-title">🧼 洗手小勇士 🦸‍♂️</h1>
           <p className="home-welcome-message">
-            一齊學識正確洗手方法 ✨
+            一起學習正確洗手方法 ✨
             <br />
-            保護自己同屋企人 🏠💖
+            保護自己和家人 🏠💖
           </p>
         </div>
       </section>
 
       <section className="home-menu-section">
-        <h2 className="home-section-title">👇 揀一個開始啦！ 👇</h2>
+        <h2 className="home-section-title">👇 選一個開始啦！ 👇</h2>
 
         <div className="home-main-section-cards">
           {mainSections.map((item) => (
@@ -83,9 +83,9 @@ function Home() {
       <section className="home-info-section">
         <h2 className="home-info-title">💡 小貼士</h2>
         <p className="home-info-text">
-          🦠 細菌睇唔到，但係會黐喺你手上！
+          🦠 細菌看不到，但是會黏在你手上！
           <br />
-          🧼 記得用正確方法洗手，先可以真正乾淨！✨
+          🧼 記得用正確方法洗手，才可以真正洗乾淨！✨
         </p>
       </section>
     </div>
