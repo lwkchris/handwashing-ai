@@ -9,10 +9,9 @@ class Swish(nn.Module):
         return x * torch.sigmoid(x)
 
 
-# CNN Model
-class CNNModel(nn.Module):
+class FNNModel(nn.Module):
     def __init__(self, input_size, num_classes):
-        super(CNNModel, self).__init__()
+        super(FNNModel, self).__init__()
 
         # Define fully connected layers
         self.fc1 = nn.Linear(input_size, 512)  # Input size
