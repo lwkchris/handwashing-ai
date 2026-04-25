@@ -93,37 +93,39 @@ def video_feed_with_skeleton():
 @cross_origin(origins="http://localhost:3000")
 def predict():
     """Make a prediction on the current webcam frame"""
-    print("📥 Received prediction request")
     try:
         success, frame = video_capture.read()
         if not success:
-            print("❌ Failed to read webcam frame")
-            return jsonify({"label": "No hands detected", "confidence": 0.0}), 500
-
-        # Flip frame to match mirror view
-        frame = cv2.flip(frame, 1)
-
-        # Get hand landmarks from the frame
-        landmarks = hand_washing.get_landmarks_from_frame(frame)
-        print(f"📌 Extracted landmarks: {landmarks}")
-
-        if not landmarks or all(value == 0 for value in landmarks):
-            print("🚫 No valid hand landmarks detected in current frame. Returning no-hand result.")
             return jsonify({"label": "No hands detected", "confidence": 0.0})
 
+        # 1. Flip frame to match mirror view
+        frame = cv2.flip(frame, 1)
+
+        # 2. Extract landmarks using MediaPipe
+        landmarks = hand_washing.get_landmarks_from_frame(frame)
+
+        # 3. CRITICAL: If MediaPipe finds nothing, do NOT call the AI model
+        # We check if landmarks is None, empty, or contains only zeros
+        if landmarks is None or len(landmarks) == 0 or all(v == 0 for v in landmarks):
+            print("🚫 No hand detected by MediaPipe. Skipping model prediction.")
+            return jsonify({
+                "label": "No hands detected",
+                "confidence": 0.0
+            })
+
+        # 4. Only if landmarks exist, ask the model "What step is this?"
         predictions = hand_washing.predict_landmarks(landmarks)
-        print(f"🔮 Prediction result: {predictions}")
 
         if predictions:
             top_prediction = predictions[0]
-            print(f"✅ Sending: {top_prediction}")
+            # Double check: if the model is weak, you could also filter by confidence here
             return jsonify(top_prediction)
-        else:
-            return jsonify({"label": "No hands detected", "confidence": 0.0})
+
+        return jsonify({"label": "No hands detected", "confidence": 0.0})
 
     except Exception as e:
-        print("❌ Error during prediction:", str(e))
-        return jsonify({"label": "Prediction error", "confidence": 0.0})
+        print(f"❌ Error: {str(e)}")
+        return jsonify({"label": "Prediction error", "confidence": 0.0}), 500
 
 
 @app.route('/shutdown', methods=['POST'])
