@@ -81,6 +81,7 @@ function HandwashingChallengePage() {
   const handleRestartGame = () => handleStartGame();
 
   // ---------- MediaPipe Setup ----------
+  // ---------- Setup MediaPipe ----------
   useEffect(() => {
     if (!gameStarted || gameFinished) return;
 
@@ -98,7 +99,7 @@ function HandwashingChallengePage() {
         });
 
         hands.onResults((results) => {
-          // ✅ 更新 Ref
+          // Update the landmark reference for the game loop
           latestLandmarks126Ref.current = resultsTo126(results);
 
           const canvasEl = canvasRef.current;
@@ -106,11 +107,14 @@ function HandwashingChallengePage() {
           if (!canvasEl || !videoEl) return;
 
           const ctx = canvasEl.getContext('2d');
-          canvasEl.width = videoEl.videoWidth;
-          canvasEl.height = videoEl.videoHeight;
+
+          // 🛑 REMOVED: manual width/height assignment that causes view extension
+          // We let CSS handle the dimensions defined in .webcam-feed and .webcam-overlay
 
           ctx.save();
+          // Use the internal drawing dimensions of the canvas
           ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
           if (results.multiHandLandmarks) {
             for (const lm of results.multiHandLandmarks) {
               drawConnectors(ctx, lm, Hands.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 4 });
@@ -121,9 +125,15 @@ function HandwashingChallengePage() {
         });
 
         const cam = new Camera(videoRef.current, {
-          onFrame: async () => { await hands.send({ image: videoRef.current }); },
-          width: 640, height: 480,
+          onFrame: async () => {
+            if (handsRef.current) {
+              await handsRef.current.send({ image: videoRef.current });
+            }
+          },
+          width: 640,
+          height: 480,
         });
+
         cam.start();
         cameraRef.current = cam;
         handsRef.current = hands;
