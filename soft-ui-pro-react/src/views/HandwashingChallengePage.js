@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useHistory } from 'react-router-dom';
 import Header from '../components/Header';
-import './HandwashingChallengePage.css';
+import './GamePage.css'; // ✅ Use the same CSS as GamePage for UI consistency
 
 import { Hands } from '@mediapipe/hands';
 import { Camera } from '@mediapipe/camera_utils';
@@ -30,6 +30,7 @@ function HandwashingChallengePage() {
   const [score, setScore] = useState(0);
   const [holdSeconds, setHoldSeconds] = useState(0);
   const [cameraError, setCameraError] = useState('');
+  const [facingMode, setFacingMode] = useState('environment');
 
   const holdCounter = useRef(0);
   const videoRef = useRef(null);
@@ -71,12 +72,13 @@ function HandwashingChallengePage() {
     setCurrentStep(baseSteps[Math.floor(Math.random() * baseSteps.length)]);
   };
 
-  const handleRestartGame = () => handleStartGame();
+  const handleToggleCamera = () => {
+    setFacingMode((prev) => (prev === 'user' ? 'environment' : 'user'));
+  };
 
-  // ---------- Setup MediaPipe (Mirrors Game.js logic) ----------
+  // ---------- Setup MediaPipe (Exact Mirror of GamePage.js) ----------
   useEffect(() => {
     if (!gameStarted || gameFinished) return undefined;
-
     let cancelled = false;
 
     const setup = async () => {
@@ -103,9 +105,6 @@ function HandwashingChallengePage() {
           if (!canvasEl) return;
 
           const ctx = canvasEl.getContext('2d');
-
-          // ✅ Matches Game.js: Force canvas resolution to match video metadata
-          // This keeps skeletons aligned without extending the container
           const w = videoEl.videoWidth || 640;
           const h = videoEl.videoHeight || 480;
           if (canvasEl.width !== w) canvasEl.width = w;
@@ -123,7 +122,6 @@ function HandwashingChallengePage() {
         });
 
         handsRef.current = hands;
-
         const cam = new Camera(videoEl, {
           onFrame: async () => {
             if (handsRef.current && videoRef.current) {
@@ -132,56 +130,47 @@ function HandwashingChallengePage() {
           },
           width: 640,
           height: 480,
+          facingMode: facingMode
         });
-
         cameraRef.current = cam;
         await cam.start();
       } catch (err) {
         setCameraError('鏡頭啟動失敗');
       }
     };
-
     setup();
-
     return () => {
       cancelled = true;
       cameraRef.current?.stop();
       handsRef.current?.close();
       latestLandmarks126Ref.current = null;
     };
-  }, [gameStarted, gameFinished]);
+  }, [gameStarted, gameFinished, facingMode]);
 
-  // ---------- Challenge Loop ----------
+  // ---------- Challenge Loop (Logic logic) ----------
   useEffect(() => {
     let interval;
     if (gameStarted && !gameFinished && currentStep) {
       interval = setInterval(async () => {
         const landmarks = latestLandmarks126Ref.current;
-
         if (!landmarks) {
           setPrediction({ label: '未偵測到雙手', confidence: 0 });
           holdCounter.current = 0;
           setHoldSeconds(0);
           return;
         }
-
         try {
           const data = await postLandmarks(landmarks);
-          setPrediction({
-            label: data.label || '偵測中',
-            confidence: data.confidence || 0
-          });
+          setPrediction({ label: data.label || '偵測中', confidence: data.confidence || 0 });
 
           if (data.label === currentStep.label) {
             holdCounter.current += 1;
             setHoldSeconds(holdCounter.current);
-
             if (holdCounter.current >= 3) {
               const nextScore = score + 1;
               setScore(nextScore);
               holdCounter.current = 0;
               setHoldSeconds(0);
-
               if (nextScore >= 10) {
                 setGameFinished(true);
                 setGameStarted(false);
@@ -193,77 +182,75 @@ function HandwashingChallengePage() {
             holdCounter.current = 0;
             setHoldSeconds(0);
           }
-        } catch (err) {
-          console.error(err);
-        }
+        } catch (err) { console.error(err); }
       }, 1000);
     }
     return () => clearInterval(interval);
   }, [gameStarted, gameFinished, score, currentStep, baseSteps]);
 
   return (
-    <div className="challenge-page">
+    <div className="game-page"> {/* ✅ Class matches GamePage */}
       <Header />
       <main className="main-content">
         {!gameStarted && !gameFinished && (
-          <section className="game-start-screen">
-            <div className="game-card text-center">
-              <h1 className="game-title">✨ 洗手挑戰模式</h1>
-              <p className="game-desc">隨機出現 10 個步驟，每個動作維持 3 秒即可過關！</p>
-              <button className="btn-primary" onClick={handleStartGame}>開始挑戰</button>
-            </div>
-          </section>
+          <div className="start-section text-center">
+            <h1>✨ 洗手挑戰模式</h1>
+            <p>隨機出現 10 個步驟，每個動作維持 3 秒即可過關！</p>
+            <button className="start-button" onClick={handleStartGame}>開始挑戰</button>
+          </div>
         )}
 
         {gameStarted && !gameFinished && currentStep && (
-          <section className="game-play-screen">
-            <div className="challenge-container">
-              <div className="video-panel">
-                <div className="webcam-box">
-                  <video ref={videoRef} className="webcam-feed" autoPlay playsInline muted />
+          <div className="guide-layout">
+            {/* Left Panel: Webcam (Exact Mirror of GamePage) */}
+            <div className="left-panel">
+              <h2>🧼 Webcam 偵測中...</h2>
+              <button onClick={handleToggleCamera} className="camera-toggle-btn">
+                🔄 切換鏡頭（{facingMode === 'user' ? '前置' : '後置'}）
+              </button>
+
+              {cameraError ? (
+                <div className="error-msg"><p>{cameraError}</p></div>
+              ) : (
+                <div className="webcam-wrap">
+                  <video ref={videoRef} className="webcam-stream" autoPlay playsInline muted />
                   <canvas ref={canvasRef} className="webcam-overlay" />
                 </div>
-                <div className="prediction-box">
-                  <p>AI 判斷：<strong>{prediction.label}</strong> ({(prediction.confidence * 100).toFixed(1)}%)</p>
-                </div>
-              </div>
+              )}
+            </div>
 
-              <div className="info-panel">
-                <div className="step-card">
-                  <span className="step-badge">目標任務</span>
-                  <h2 className="current-step-title">{currentStep.displayLabel}</h2>
-                  <div className="step-image-wrap">
-                    <img src={currentStep.image} alt="step" className="step-image" />
-                  </div>
-                </div>
+            {/* Right Panel: Challenge Info (Exact Mirror of GamePage) */}
+            <div className="right-panel">
+              <div className="step-badge">進度：{score} / 10</div>
+              <h2>目標任務：請做出「{currentStep.displayLabel}」</h2>
 
-                <div className="status-box">
-                  <div className={`countdown-box ${holdSeconds > 0 ? 'active' : ''}`}>
-                    {holdSeconds > 0 ? (
-                      <p className="countdown-text">✅ 正確！請維持 <strong>{3 - holdSeconds}</strong> 秒</p>
-                    ) : (
-                      <p className="countdown-wait">等待正確動作...</p>
-                    )}
-                    <div className="progress-bar">
-                      <div className="progress-fill" style={{ width: `${(holdSeconds / 3) * 100}%` }}></div>
-                    </div>
-                  </div>
-                  <p className="score-text">🎯 已完成關卡：{score} / 10</p>
+              <img src={currentStep.image} alt="step" className="step-image" onError={(e) => e.target.style.display='none'} />
+
+              <div className="prediction-result">
+                <p>🧠 AI 偵測：<strong>{prediction.label}</strong></p>
+                <p>📊 信心指數：{(prediction.confidence * 100).toFixed(2)}%</p>
+                <p>🎯 目前得分：{score}</p>
+
+                <div className="countdown-container" style={{ background: holdSeconds > 0 ? '#e8f5e9' : '#f5f5f5' }}>
+                  {holdSeconds > 0 ? (
+                    <h3 style={{ color: '#2e7d32' }}>✅ 動作正確！請維持 {3 - holdSeconds} 秒...</h3>
+                  ) : (
+                    <h3 style={{ color: '#757575' }}>⏳ 等待正確動作...</h3>
+                  )}
                 </div>
               </div>
             </div>
-          </section>
+          </div>
         )}
 
         {gameFinished && (
-          <section className="game-finish-screen">
-            <div className="game-card text-center">
-              <h1>🎉 恭喜！你完成了挑戰</h1>
-              <h2 className="finish-score">最終得分：{score} / 10</h2>
-              <button className="btn-primary" onClick={handleRestartGame}>再玩一次</button>
-              <button className="btn-secondary" onClick={() => history.push('/')}>返回主頁</button>
-            </div>
-          </section>
+          <div className="finish-section text-center">
+            <h1>🎉 恭喜！你完成了挑戰</h1>
+            <p>你已經完成 10 個隨機洗手步驟！</p>
+            <h2 style={{ color: '#f39c12' }}>🏆 最終得分：{score} / 10</h2>
+            <button className="start-button" onClick={handleStartGame}>再玩一次</button>
+            <button className="start-button" onClick={() => history.push('/')} style={{ background: '#95a5a6', marginLeft: '10px' }}>返回主頁</button>
+          </div>
         )}
       </main>
     </div>
