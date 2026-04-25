@@ -3,18 +3,18 @@ import torch
 import numpy as np
 import mediapipe as mp
 from joblib import load
-from Training.model import FNNModel
+from Training.model import CNNModel
 
 class HandWashing:
     def __init__(self):
         # Paths to the model and label encoder
-        MODEL_PATH = r"../Training/model_dir/fnn_model.pth"
-        ENCODER_PATH = r"../Training/model_dir/fnn_label_encoder.joblib"
+        MODEL_PATH = r"../Training/model_dir/cnn_asl_model.pth"
+        ENCODER_PATH = r"../Training/model_dir/cnn_label_encoder.joblib"
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Initialize the CNN model
-        self.model = FNNModel(input_size=21 * 3 * 2, num_classes=7)
+        self.model = CNNModel(input_size=21 * 3 * 2, num_classes=7)
         self.model.load_state_dict(torch.load(MODEL_PATH, map_location=self.device), strict=False)
         self.model.to(self.device)
         self.model.eval()
@@ -27,7 +27,7 @@ class HandWashing:
 
     def get_landmarks_from_frame(self, frame):
         """Extract hand landmarks from the video frame using MediaPipe."""
-        with self.mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.25, min_tracking_confidence=0.3) as hands:
+        with self.mp_hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.25, min_tracking_confidence=0.25) as hands:
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = hands.process(frame_rgb)
 
