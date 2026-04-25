@@ -12,6 +12,7 @@ import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
 function HandwashingChallengePage() {
   const history = useHistory();
 
+  // 1. 定義基礎 7 個步驟
   const baseSteps = useMemo(
     () => [
       { label: 'Step1', displayLabel: '洗手心', image: '/images/Step1.png' },
@@ -39,16 +40,20 @@ function HandwashingChallengePage() {
   const canvasRef = useRef(null);
   const cameraRef = useRef(null);
   const handsRef = useRef(null);
-  const latestLandmarks126Ref = useRef(new Array(126).fill(0)); // Initialize with zeros
+  const latestLandmarks126Ref = useRef(null);
 
   const currentStep = steps[stepIndex] || null;
 
+  // 2. 隨機生成 10 個動作的邏輯 (確保打亂順序)
   const generateTenSteps = (array) => {
+    // A. 包含所有 7 個動作各一次
     let result = [...array];
+    // B. 隨機再選 3 個動作補充至 10 個
     for (let i = 0; i < 3; i++) {
       const randomPick = array[Math.floor(Math.random() * array.length)];
       result.push(randomPick);
     }
+    // C. Fisher-Yates Shuffle 洗牌演算法：徹底打亂這 10 個動作的順序
     for (let i = result.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [result[i], result[j]] = [result[j], result[i]];
@@ -65,102 +70,109 @@ function HandwashingChallengePage() {
     holdCounter.current = 0;
     setGameStarted(true);
     setGameFinished(false);
-    setPrediction({ label: '等待偵測...', confidence: 0 });
+    setPrediction({ label: '偵測中...', confidence: 0 });
+    setCameraError('');
   };
 
-  // MediaPipe Initialization
+  const handleRestartGame = () => handleStartGame();
+
+  // 3. MediaPipe & Camera 初始化 (固定前置鏡頭)
   useEffect(() => {
     if (!gameStarted || gameFinished) return;
 
-    const hands = new Hands({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
-    });
+    let cancelled = false;
+    const setup = async () => {
+      try {
+        const videoEl = videoRef.current;
+        if (!videoEl) return;
 
-    hands.setOptions({
-      maxNumHands: 2,
-      modelComplexity: 1,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5,
-    });
+        const hands = new Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`,
+        });
 
-    hands.onResults((results) => {
-      // Update landmarks reference
-      latestLandmarks126Ref.current = resultsTo126(results);
+        hands.setOptions({
+          maxNumHands: 2,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.6,
+          minTrackingConfidence: 0.6,
+        });
 
-      // Draw landmarks on canvas
-      if (canvasRef.current && videoRef.current) {
-        const ctx = canvasRef.current.getContext('2d');
-        canvasRef.current.width = videoRef.current.videoWidth;
-        canvasRef.current.height = videoRef.current.videoHeight;
-        ctx.save();
-        ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-        if (results.multiHandLandmarks) {
-          for (const landmarks of results.multiHandLandmarks) {
-            drawConnectors(ctx, landmarks, Hands.HAND_CONNECTIONS, { color: '#00FF00', lineWidth: 5 });
-            drawLandmarks(ctx, landmarks, { color: '#FF0000', lineWidth: 2 });
+        hands.onResults((results) => {
+          if (cancelled) return;
+          latestLandmarks126Ref.current = resultsTo126(results);
+
+          const canvasEl = canvasRef.current;
+          if (!canvasEl) return;
+          const ctx = canvasEl.getContext('2d');
+          const w = videoEl.videoWidth || 640;
+          const h = videoEl.videoHeight || 480;
+
+          if (canvasEl.width !== w) canvasEl.width = w;
+          if (canvasEl.height !== h) canvasEl.height = h;
+
+          ctx.save();
+          ctx.clearRect(0, 0, w, h);
+          const handsLm = results.multiHandLandmarks || [];
+          for (const lm of handsLm) {
+            drawConnectors(ctx, lm, Hands.HAND_CONNECTIONS, { lineWidth: 4, color: '#00FF00' });
+            drawLandmarks(ctx, lm, { radius: 3, color: '#FF0000' });
           }
-        }
-        ctx.restore();
+          ctx.restore();
+        });
+
+        handsRef.current = hands;
+
+        // 強制設定為 'user' 使用前置鏡頭
+        const cam = new Camera(videoEl, {
+          onFrame: async () => {
+            if (handsRef.current && videoRef.current) {
+              await handsRef.current.send({ image: videoRef.current });
+            }
+          },
+          width: 640,
+          height: 480,
+          facingMode: 'environment', 
+        });
+        cameraRef.current = cam;
+        await cam.start();
+      } catch (err) {
+        setCameraError('⚠️ 無法啟動鏡頭。請確保已允許瀏覽器存取相機。');
       }
-    });
+    };
 
-    if (videoRef.current) {
-      const camera = new Camera(videoRef.current, {
-        onFrame: async () => {
-          await hands.send({ image: videoRef.current });
-        },
-        width: 640,
-        height: 480,
-        facingMode: 'user', // Changed to user for front camera
-      });
-      camera.start();
-      cameraRef.current = camera;
-    }
-
-    handsRef.current = hands;
-
+    setup();
     return () => {
+      cancelled = true;
       if (cameraRef.current) cameraRef.current.stop();
       if (handsRef.current) handsRef.current.close();
     };
-  }, [gameStarted, gameFinished]);
+  }, [gameStarted, gameFinished]); // 移除 facingMode 依賴
 
-  // Prediction Loop with Gatekeeper
+  // 4. 判定邏輯
   useEffect(() => {
     if (!gameStarted || gameFinished || !currentStep) return;
 
     const interval = setInterval(async () => {
-      const landmarks126 = latestLandmarks126Ref.current;
-
-      // --- SOLUTION 1: GATEKEEPER ---
-      const hasHands = landmarks126 && landmarks126.some(val => val !== 0);
-
-      if (!hasHands) {
-        setPrediction({ label: '未偵測到雙手', confidence: 0 });
-        holdCounter.current = 0;
-        setHoldSeconds(0);
-        return; // Skip API call
-      }
-
       try {
+        const landmarks126 = latestLandmarks126Ref.current || new Array(126).fill(0);
         const data = await postLandmarks(landmarks126);
-        if (!data) return;
 
-        // Use standard confidence threshold of 0.6
-        const isCorrectAction = data.label === currentStep.label && data.confidence > 0.6;
+        if (!data || !data.label) return;
 
         const matched = baseSteps.find(s => s.label === data.label);
         setPrediction({
-          label: matched ? matched.displayLabel : '未知動作',
+          label: matched ? matched.displayLabel : '偵測中...',
           confidence: data.confidence || 0,
         });
 
-        if (isCorrectAction) {
-          holdCounter.current += 0.5; // Increment by interval timing (roughly 0.5s)
-          setHoldSeconds(Math.floor(holdCounter.current));
+        if (data.label === currentStep.label) {
+          holdCounter.current += 1;
+          setHoldSeconds(holdCounter.current);
 
           if (holdCounter.current >= 3) {
+            clearInterval(interval);
             setScore((prev) => prev + 1);
+
             if (stepIndex < steps.length - 1) {
               setStepIndex((prev) => prev + 1);
               holdCounter.current = 0;
@@ -177,13 +189,16 @@ function HandwashingChallengePage() {
       } catch (err) {
         console.error('Prediction fail:', err);
       }
-    }, 500); // 0.5 second interval is smoother for feedback
+    }, 1000);
 
     return () => clearInterval(interval);
-  }, [gameStarted, gameFinished, stepIndex, steps, currentStep, baseSteps]);
+  }, [gameStarted, gameFinished, stepIndex, steps.length, currentStep, baseSteps]);
 
+  // 輔助函數
   const flattenHandLandmarksTo63 = (handLandmarks) => {
-    return handLandmarks.flatMap(p => [p.x, p.y, p.z]);
+    const out = [];
+    for (const p of handLandmarks) out.push(p.x, p.y, p.z);
+    return out;
   };
 
   const resultsTo126 = (results) => {
@@ -194,11 +209,12 @@ function HandwashingChallengePage() {
   };
 
   const postLandmarks = async (landmarks126) => {
-    const res = await fetch('http://localhost:5000/predict', { // Ensure URL is correct
+    const res = await fetch('/api/classify_landmarks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ landmarks: landmarks126 }),
     });
+    if (!res.ok) throw new Error('API Error');
     return res.json();
   };
 
@@ -210,47 +226,70 @@ function HandwashingChallengePage() {
           <section className="game-start-screen">
             <div className="game-card text-center">
               <h1 className="game-title">🧼 洗手挑戰：全能戰士</h1>
-              <p className="game-desc">隨機安排 10 個洗手動作，每個動作需維持正確 3 秒。</p>
-              <button className="btn-primary" onClick={handleStartGame}>開始挑戰</button>
+              <p className="game-desc">系統會隨機安排 10 個洗手動作，每個動作需維持正確 3 秒。準備好就開始！</p>
+              <div className="action-buttons">
+                <button className="btn-primary" onClick={handleStartGame}>開始挑戰</button>
+                <button className="btn-secondary" onClick={() => history.push('/')}>返回主頁</button>
+              </div>
             </div>
           </section>
         )}
 
         {gameStarted && !gameFinished && currentStep && (
-          <div className="guide-layout">
-            <div className="game-card left-panel">
-              <div className="webcam-wrap">
-                <video ref={videoRef} className="webcam-stream" autoPlay playsInline muted />
-                <canvas ref={canvasRef} className="webcam-overlay" />
-              </div>
-              <div className="prediction-box">
-                <p>AI 辨識：<strong>{prediction.label}</strong> ({(prediction.confidence * 100).toFixed(0)}%)</p>
-              </div>
+          <section className="game-playing-section">
+            <div className="game-topbar">
+              <button className="btn-secondary small" onClick={() => history.push('/')}>放棄挑戰</button>
             </div>
 
-            <div className="game-card right-panel">
-              <div className="step-badge">第 {stepIndex + 1} / 10 關</div>
-              <h2 className="current-step-title">{currentStep.displayLabel}</h2>
-              <img src={currentStep.image} alt="step" className="step-image" />
-              <div className="status-box">
-                <div className={`countdown-box ${holdSeconds > 0 ? 'active' : ''}`}>
-                  <p>{holdSeconds > 0 ? `請維持 ${3 - holdSeconds} 秒` : '等待動作...'}</p>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${(holdSeconds / 3) * 100}%` }}></div>
-                  </div>
+            <div className="guide-layout">
+              <div className="game-card left-panel">
+                <h2 className="panel-title">📷 偵測畫面 (前置鏡頭)</h2>
+                <div className="webcam-wrap">
+                  <video ref={videoRef} className="webcam-stream" autoPlay playsInline muted />
+                  <canvas ref={canvasRef} className="webcam-overlay" />
                 </div>
-                <p className="score-text">已完成：{score} / 10</p>
+                {cameraError && <p className="error-text">{cameraError}</p>}
+                <div className="prediction-box">
+                  <p>🧠 AI 辨識中：<strong>{prediction.label}</strong></p>
+                  <p>📊 信心指數：{(prediction.confidence * 100).toFixed(0)}%</p>
+                </div>
+              </div>
+
+              <div className="game-card right-panel">
+                <div className="step-badge">第 {stepIndex + 1} / 10 關</div>
+                <h2 className="current-step-title">請做出：{currentStep.displayLabel}</h2>
+                <div className="step-image-wrap">
+                  <img src={currentStep.image} alt="step" className="step-image" />
+                </div>
+                <div className="status-box">
+                  <div className={`countdown-box ${holdSeconds > 0 ? 'active' : ''}`}>
+                    {holdSeconds > 0 ? (
+                      <p className="countdown-text">✅ 正確！請維持 <strong>{3 - holdSeconds}</strong> 秒</p>
+                    ) : (
+                      <p className="countdown-wait">等待正確動作...</p>
+                    )}
+                    <div className="progress-bar">
+                      <div className="progress-fill" style={{ width: `${(holdSeconds / 3) * 100}%` }}></div>
+                    </div>
+                  </div>
+                  <p className="score-text">🎯 已完成關卡：{score} / 10</p>
+                </div>
               </div>
             </div>
-          </div>
+          </section>
         )}
 
         {gameFinished && (
-          <div className="finish-section text-center">
-            <h1>🎉 挑戰成功！</h1>
-            <h2>最終得分：{score} / 10</h2>
-            <button className="btn-primary" onClick={handleStartGame}>再玩一次</button>
-          </div>
+          <section className="game-finish-screen">
+            <div className="game-card text-center">
+              <h1>🎉 恭喜！你完成了挑戰</h1>
+              <h2 className="finish-score">最終得分：{score} / 10</h2>
+              <div className="action-buttons">
+                <button className="btn-primary" onClick={handleRestartGame}>再玩一次</button>
+                <button className="btn-secondary" onClick={() => history.push('/')}>返回主頁</button>
+              </div>
+            </div>
+          </section>
         )}
       </main>
     </div>

@@ -127,4 +127,3 @@ function HandwashingTutorialPage() {
 
 export default HandwashingTutorialPage
 
-
